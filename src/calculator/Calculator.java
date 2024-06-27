@@ -5,6 +5,7 @@
 package calculator;
 
 import java.awt.Color;
+import java.util.Stack;
 
 public class Calculator extends javax.swing.JFrame {
 
@@ -12,10 +13,6 @@ public class Calculator extends javax.swing.JFrame {
     private double number2;
     private String hold = "";
     private String type;
-    private boolean plus;
-    private boolean minus;
-    private boolean multiply;
-    private boolean divide;
 
     /**
      * Creates new form Calculator1
@@ -376,12 +373,11 @@ public class Calculator extends javax.swing.JFrame {
     }//GEN-LAST:event_eightBtnActionPerformed
 
     private void divideBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_divideBtnActionPerformed
-        if (plus == false && minus == false && multiply == false) {
+   
             hold += "÷";
             displayTxtArea.setText(hold);
             type = "divide";
-            divide = true;
-        }
+        
     }//GEN-LAST:event_divideBtnActionPerformed
 
     private void sixBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sixBtnActionPerformed
@@ -400,12 +396,11 @@ public class Calculator extends javax.swing.JFrame {
     }//GEN-LAST:event_fiveBtnActionPerformed
 
     private void multiplyBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_multiplyBtnActionPerformed
-        if (plus == false && minus == false && divide == false) {
+
             hold += "×";
             displayTxtArea.setText(hold);
             type = "multiply";
-            multiply = true;
-        }
+        
     }//GEN-LAST:event_multiplyBtnActionPerformed
 
     private void threeBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_threeBtnActionPerformed
@@ -424,40 +419,20 @@ public class Calculator extends javax.swing.JFrame {
     }//GEN-LAST:event_twoBtnActionPerformed
 
     private void minusBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_minusBtnActionPerformed
-        if (plus == false && divide == false && multiply == false) {
+  
             hold += "-";
             displayTxtArea.setText(hold);
             type = "subtract";
-            minus = true;
-        }
+        
     }//GEN-LAST:event_minusBtnActionPerformed
 
     private void equalBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_equalBtnActionPerformed
         try {
-            if (plus) {
-                number1 = Double.parseDouble(hold.substring(0, hold.indexOf("+")));
-                number2 = Double.parseDouble(hold.substring(hold.indexOf("+") + 1));
-                hold = (number1 + number2) + "";
-            } else if (minus) {
-                number1 = Double.parseDouble(hold.substring(0, hold.indexOf("-")));
-                number2 = Double.parseDouble(hold.substring(hold.indexOf("-") + 1));
-                hold = (number1 - number2) + "";
-            } else if (multiply) {
-                number1 = Double.parseDouble(hold.substring(0, hold.indexOf("×")));
-                number2 = Double.parseDouble(hold.substring(hold.indexOf("×")+ 1));
-                hold = number1 * number2 + "";
-            } else if (divide) {
-                number1 = Double.parseDouble(hold.substring(0, hold.indexOf("÷")));
-                number2 = Double.parseDouble(hold.substring(hold.indexOf("÷")+ 1));
-                hold = number1 / number2 + "";
-            } else {
-
-            }
+            hold = evaluateExpression(hold);
             displayTxtArea.setText(hold);
-            resetConditions();
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             hold = "";
-            displayTxtArea.setText("Error");
+            displayTxtArea.setText("Syntax Error");
         }
 
 
@@ -474,18 +449,71 @@ public class Calculator extends javax.swing.JFrame {
     }//GEN-LAST:event_decimalBtnActionPerformed
 
     private void plusBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plusBtnActionPerformed
-        if (divide == false && minus == false && multiply == false) {
+
             hold += "+";
             displayTxtArea.setText(hold);
             type = "addition";
-            plus = true;
-        }
+        
     }//GEN-LAST:event_plusBtnActionPerformed
-    public void resetConditions() {
-        plus = false;
-        minus = false;
-        multiply = false;
-        divide = false;
+
+
+    private String evaluateExpression(String expression) {
+        Stack<Double> values = new Stack<>();
+        Stack<Character> operators = new Stack<>();
+        for (int i = 0; i < expression.length(); i++) {
+            char c = expression.charAt(i);
+
+            if (Character.isDigit(c)) {
+                StringBuilder sb = new StringBuilder();
+                while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
+                    sb.append(expression.charAt(i++));
+                }
+                values.push(Double.parseDouble(sb.toString()));
+                i--; // to offset the extra increment
+            } else if (c == '(') {
+                operators.push(c);
+            } else if (c == ')') {
+                while (operators.peek() != '(') {
+                    values.push(applyOp(operators.pop(), values.pop(), values.pop()));
+                }
+                operators.pop();
+            } else if (c == '+' || c == '-' || c == '×' || c == '÷') {
+                while (!operators.isEmpty() && hasPrecedence(c, operators.peek())) {
+                    values.push(applyOp(operators.pop(), values.pop(), values.pop()));
+                }
+                operators.push(c);
+            }
+        }
+
+        while (!operators.isEmpty()) {
+            values.push(applyOp(operators.pop(), values.pop(), values.pop()));
+        }
+
+        return values.pop().toString();
+    }
+
+    private boolean hasPrecedence(char op1, char op2) {
+        if (op2 == '(' || op2 == ')') {
+            return false;
+        }
+        if ((op1 == '×' || op1 == '÷') && (op2 == '+' || op2 == '-')) {
+            return false;
+        }
+        return true;
+    }
+
+    private double applyOp(char op, double b, double a) {
+        switch (op) {
+            case '+':
+                return a + b;
+            case '-':
+                return a - b;
+            case '×':
+                return a * b;
+            case '÷':
+                return a / b;
+        }
+        return 0;
     }
 
     /**
